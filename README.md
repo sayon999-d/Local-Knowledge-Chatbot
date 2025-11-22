@@ -2,7 +2,7 @@
 
 A powerful, locally-running RAG (Retrieval-Augmented Generation) chatbot system that allows you to build a knowledge base from web URLs and documents, then query it using local LLMs via Ollama.
 
-## 🚀 Features
+## Features
 
 - **Local-First Architecture**: Runs entirely on your machine with no external API dependencies
 - **Web Scraping**: Automatically scrapes and indexes content from web URLs
@@ -13,13 +13,13 @@ A powerful, locally-running RAG (Retrieval-Augmented Generation) chatbot system 
 - **Docker Support**: Easy deployment with Docker and Docker Compose
 - **Offline Capable**: Works without internet connection once models are downloaded
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Python 3.9 or higher
 - [Ollama](https://ollama.ai/) installed and running
 - Docker and Docker Compose (optional, for containerized deployment)
 
-## 🛠️ Installation
+## Installation
 
 ### Option 1: Local Installation
 
@@ -62,7 +62,7 @@ A powerful, locally-running RAG (Retrieval-Augmented Generation) chatbot system 
 3. **Access the application:**
    - Open your browser and navigate to `http://localhost:8080`
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -86,7 +86,7 @@ OLLAMA_MODEL = "mistral:instruct"
 EMBEDDING_MODEL = "mxbai-embed-large"
 ```
 
-## 📖 Usage
+## Usage
 
 ### Adding Knowledge
 
@@ -108,7 +108,7 @@ EMBEDDING_MODEL = "mxbai-embed-large"
    - Generate an answer using the local LLM
    - Display sources used for the answer
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────┐
@@ -128,7 +128,7 @@ EMBEDDING_MODEL = "mxbai-embed-large"
 └────────┘ └─────────┘
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Local-Knowledge-Chatbot/
@@ -143,7 +143,7 @@ Local-Knowledge-Chatbot/
 └── saved_articles/       # Saved scraped content (created automatically)
 ```
 
-## 🔧 Customization
+## Customization
 
 ### Adding Default URLs
 
@@ -170,7 +170,7 @@ ports:
   - "8080:8080"  # Change 8080 to your desired port
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Ollama Connection Issues
 
@@ -188,19 +188,19 @@ ports:
 - Change the port in `docker-compose.yml` or use a different port for Streamlit
 - Check what's using the port: `lsof -i :8080`
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📧 Contact
+## Contact
 
 For questions or issues, please open an issue on GitHub.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [LangChain](https://www.langchain.com/) for the RAG framework
 - [ChromaDB](https://www.trychroma.com/) for vector storage
