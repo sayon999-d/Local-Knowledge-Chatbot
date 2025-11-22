@@ -4,9 +4,7 @@ import time
 import traceback
 from datetime import datetime
 
-# ==========================================
 # 1. CONFIGURATION & SETTINGS
-# ==========================================
 # Disable Gradio analytics and set User Agent
 os.environ['GRADIO_OFFLINE_MODE'] = '1'
 os.environ['HF_HUB_OFFLINE'] = '1'
@@ -34,9 +32,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ==========================================
 # 2. CONSTANTS
-# ==========================================
 ST_PORT = 8501
 CHROMA_DIR = "./chroma_db_data"
 MODEL_PATH = "./local_embeddings/mxbai-embed-large"
@@ -91,9 +87,7 @@ URL_LIST = [
     "https://pcpartpicker.com/forums/topic/443648-4080-super-vs-7900-xtx-for-editing",
 ]
 
-# ==========================================
 # 3. HELPER FUNCTIONS
-# ==========================================
 def save_text_to_file(source_name, content):
     """Saves raw text content to the local folder"""
     try:
@@ -127,9 +121,7 @@ def get_smart_ip():
     except:
         return "127.0.0.1"
 
-# ==========================================
 # 4. THE RAG ENGINE
-# ==========================================
 class RAGSystem:
     def __init__(self):
         self.qa_chain = None
@@ -314,9 +306,7 @@ def get_engine():
 
 engine = get_engine()
 
-# ==========================================
 # 5. STREAMLIT UI
-# ==========================================
 st.set_page_config(page_title="Local RAG System", layout="wide")
 
 LOCAL_IP = get_smart_ip()
