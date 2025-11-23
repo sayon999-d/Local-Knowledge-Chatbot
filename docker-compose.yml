@@ -4,13 +4,13 @@ services:
   rag-chatbot:
     build: .
     container_name: local-rag-app
+    ports:
+      - "8501:8501"
     environment:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    ports:
-      - "8080:8080"
     volumes:
-      - ./chroma_db_data:/app/chromadb
+      - ./chroma_db_data:/app/chroma_db_data
       - ./local_embeddings:/app/local_embeddings
-    restart: unless-stopped
+      - ./saved_articles:/app/saved_articles
