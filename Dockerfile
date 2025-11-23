@@ -2,7 +2,6 @@ FROM python:3.9-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-
 WORKDIR /app
 
 RUN apt-get update --fix-missing && apt-get install -y \
@@ -26,4 +25,4 @@ COPY . .
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.maxUploadSize=1024"]
+CMD ["streamlit", "run", "main.py", "--server.address=0.0.0.0", "--server.port=8501"]
