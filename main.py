@@ -1,9 +1,44 @@
 import os
 import sys
 import time
+import socket
 from datetime import datetime
 
-# 1. PERFORMANCE & OFFLINE SETTINGS
+import streamlit as st
+from streamlit.web.server.websocket_headers import _get_websocket_headers
+
+def main():
+    st.set_page_config(
+        page_title="RAG Chatbot",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+    
+if __name__ == "__main__":
+    import os
+    os.environ['STREAMLIT_SERVER_PORT'] = '8501'
+    os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
+    os.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'
+    main()
+
+hostname = socket.gethostname()
+container_ip = socket.gethostbyname(hostname)
+
+st.config.set_option('server.address', '0.0.0.0')
+st.config.set_option('server.port', 8501)
+st.config.set_option('server.headless', True)
+st.config.set_option('server.enableCORS', True)
+st.config.set_option('server.enableXsrfProtection', True)
+
+os.environ['STREAMLIT_SERVER_ADDRESS'] = '0.0.0.0'
+os.environ['STREAMLIT_SERVER_PORT'] = '8501'
+os.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'
+os.environ['STREAMLIT_BROWSER_GATHER_USAGE_STATS'] = 'false'
+os.environ['LANGCHAIN_TRACING_V2'] = 'false'
+os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
+os.environ['LANGCHAIN_API_KEY'] = "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"
+os.environ['LANGCHAIN_PROJECT'] = 'local-rag'
+
 os.environ['GRADIO_OFFLINE_MODE'] = '1'
 os.environ['HF_HUB_OFFLINE'] = '1'
 os.environ['TRANSFORMERS_OFFLINE'] = '1'
@@ -12,10 +47,8 @@ os.environ['HF_EVALUATE_OFFLINE'] = '1'
 os.environ['GRADIO_ANALYTICS_ENABLED'] = 'False'
 os.environ["USER_AGENT"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-import streamlit as st
 import requests
 import logging
-
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -24,25 +57,24 @@ from langchain.chains import RetrievalQA
 from sentence_transformers import SentenceTransformer
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.docstore.document import Document
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 2. CONSTANTS
 ST_PORT = 8501
 CHROMA_DIR = "./chroma_db_data"
-MODEL_PATH = "/app/local_embeddings/all-MiniLM-L6-v2"
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_PATH = "sentence-transformers/all-MiniLM-L6-v2"
 embeddings = HuggingFaceEmbeddings(model_name=MODEL_PATH, model_kwargs={'device': 'cpu'})
+MODEL_NAME = "all-MiniLM-L6-v2"
 SAVE_DIR = "./saved_articles"
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
 OLLAMA_MODEL = "mistral:instruct"
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-# Initial Knowledge Base
 URL_LIST = [
     # AMD Radeon (Official Product & Tech Pages)
     "https://www.amd.com/en/products/graphics/desktops/radeon.html",
@@ -85,7 +117,6 @@ URL_LIST = [
     "https://pcpartpicker.com/forums/topic/443648-4080-super-vs-7900-xtx-for-editing",
 ]
 
-# 3. MODERN UI STYLING (High Contrast)
 st.set_page_config(
     page_title="AI Assistant",
     page_icon="🤖",
@@ -93,7 +124,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS to fix visibility, contrast, and layout
 st.markdown("""
     <style>
     /* 1. Main Background - Soft Grey (Easier on eyes) */
@@ -153,7 +183,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 4. BACKEND ENGINE
 def save_text_to_file(source_name, content):
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -181,20 +210,23 @@ class RAGSystem:
             return False
 
     def get_embeddings(self):
+        
+        Path(MODEL_PATH).parent.mkdir(parents=True, exist_ok=True)
+    
         if os.path.exists(MODEL_PATH) and len(os.listdir(MODEL_PATH)) > 0:
             return HuggingFaceEmbeddings(
                 model_name=MODEL_PATH,
                 model_kwargs={'device': 'cpu'},
                 encode_kwargs={'normalize_embeddings': True}
             )
-    
+
         if not self.check_internet():
             st.error("OFFLINE ERROR: First run requires internet to download AI models.")
             st.stop()
 
         with st.spinner("Downloading AI Models (One-time setup)..."):
-            downloader = SentenceTransformer(MODEL_NAME)
-            downloader.save(MODEL_PATH)
+            model = SentenceTransformer(MODEL_NAME)
+            model.save(MODEL_PATH)  
         return HuggingFaceEmbeddings(
             model_name=MODEL_PATH,
             model_kwargs={'device': 'cpu'},
@@ -295,9 +327,6 @@ def get_engine():
 
 engine = get_engine()
 
-# 5. APP LAYOUT
-
-# SIDEBAR: SCRAPE & LEARN
 with st.sidebar:
     st.title("Dashboard")
     st.markdown("---")
@@ -388,3 +417,14 @@ if prompt := st.chat_input("Ask me anything..."):
                 })
     else:
         st.error("System is not ready. Check if Ollama is running.")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "streamlit.web.cli:main",
+        host="0.0.0.0",
+        port=8501,
+        log_level="info",
+        reload=False,
+        workers=1
+    )
