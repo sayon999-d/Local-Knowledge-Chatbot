@@ -188,7 +188,7 @@ ports:
 - Change the port in `docker-compose.yml` or use a different port for Streamlit
 - Check what's using the port: `lsof -i :8501`
 
-### Docker Commands
+## Docker Commands
 
 - Push (Upload to Docker Hub)
 
@@ -201,10 +201,10 @@ docker tag local-rag-app manttex999/rag-chatbot:v1
 # 3. Upload it
 docker push manttex999/rag-chatbot:v1
 
-### Pull (Download)
+## Pull (Download)
 - docker pull manttex999/rag-chatbot:v1
 
-### Run (Start the App)
+## Run (Start the App):**
 - Since this app needs to talk to Ollama on your host machine, you must use this specific command to bridge the network.
 Prerequisite: Ensure ollama serve is running on the host computer first.
 
