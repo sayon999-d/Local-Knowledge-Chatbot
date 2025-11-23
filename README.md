@@ -192,7 +192,8 @@ ports:
 
 - Push (Upload to Docker Hub)
 
-# 1. Log in to Docker Hub
+# 1. **Log in to Docker Hub:**
+
 docker login
 
 # 2. Tag your image (Replace 'v1' with a version number)
