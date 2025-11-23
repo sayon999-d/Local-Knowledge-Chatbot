@@ -78,7 +78,7 @@ For Docker, the default is `http://host.docker.internal:11434` to connect to Oll
 
 The default configuration uses:
 - **LLM Model**: `mistral:instruct` (via Ollama)
-- **Embedding Model**: `mxbai-embed-large` (via Ollama)
+- **Embedding Model**: `all-MiniLM-L6-v2` (via Ollama)
 
 You can modify these in `main.py`:
 ```python
@@ -167,7 +167,7 @@ streamlit run main.py --server.port 8501
 For Docker, edit `docker-compose.yml`:
 ```yaml
 ports:
-  - "8080:8080"  # Change 8080 to your desired port
+  - "8501:8501"  # Change 8080 to your desired port
 ```
 
 ## Troubleshooting
@@ -186,7 +186,32 @@ ports:
 ### Port Already in Use
 
 - Change the port in `docker-compose.yml` or use a different port for Streamlit
-- Check what's using the port: `lsof -i :8080`
+- Check what's using the port: `lsof -i :8501`
+
+### Docker Commands
+
+- Push (Upload to Docker Hub)
+
+# 1. Log in to Docker Hub
+docker login
+
+# 2. Tag your image (Replace 'v1' with a version number)
+docker tag local-rag-app manttex999/rag-chatbot:v1
+
+# 3. Upload it
+docker push manttex999/rag-chatbot:v1
+
+### Pull (Download)
+- docker pull manttex999/rag-chatbot:v1
+
+### Run (Start the App)
+- Since this app needs to talk to Ollama on your host machine, you must use this specific command to bridge the network.
+Prerequisite: Ensure ollama serve is running on the host computer first.
+
+  docker run -p 8501:8501 \
+  --add-host host.docker.internal:host-gateway \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  manttex999/rag-chatbot:v1
 
 ## License
 
