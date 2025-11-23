@@ -16,3 +16,4 @@ services:
       - ./chroma_db_data:/app/chroma_db_data
       - ./local_embeddings:/app/local_embeddings
       - ./saved_articles:/app/saved_articles
+
