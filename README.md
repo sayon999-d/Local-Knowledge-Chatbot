@@ -220,7 +220,7 @@ Prerequisite: Ensure ollama serve is running on the host computer first.
   docker run -p 8501:8501 \
   --add-host host.docker.internal:host-gateway \
   -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
-  manttex999/rag-chatbot:v1
+  manttex999/rag-chatbot:latest
 ```
 
 ## License
