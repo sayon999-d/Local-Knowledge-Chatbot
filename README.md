@@ -192,27 +192,36 @@ ports:
 
 - Push (Upload to Docker Hub)
 
-# 1. **Log in to Docker Hub:**
-
+ 1. **Log in to Docker Hub:**
+```bash
 docker login
+```
 
-# 2. Tag your image (Replace 'v1' with a version number)
+ 2. **Tag your image (Replace 'v1' with a version number):**
+```bash
 docker tag local-rag-app manttex999/rag-chatbot:v1
+```
 
-# 3. Upload it
+ 3. **Upload it:**
+  ```bash
 docker push manttex999/rag-chatbot:v1
+```
 
-## Pull (Download)
-- docker pull manttex999/rag-chatbot:v1
+ 4. **Pull (Download):**
+  ```bash
+ docker pull manttex999/rag-chatbot:v1
+ ```
 
-## Run (Start the App):**
+  5. **Run (Start the App):**
 - Since this app needs to talk to Ollama on your host machine, you must use this specific command to bridge the network.
 Prerequisite: Ensure ollama serve is running on the host computer first.
 
+```bash
   docker run -p 8501:8501 \
   --add-host host.docker.internal:host-gateway \
   -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
   manttex999/rag-chatbot:v1
+```
 
 ## License
 
