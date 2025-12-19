@@ -36,7 +36,7 @@ os.environ['STREAMLIT_SERVER_HEADLESS'] = 'true'
 os.environ['STREAMLIT_BROWSER_GATHER_USAGE_STATS'] = 'false'
 os.environ['LANGCHAIN_TRACING_V2'] = 'false'
 os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
-os.environ['LANGCHAIN_API_KEY'] = "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"
+os.environ['LANGCHAIN_API_KEY'] = "YOUR_LANGCHAIN_API_KEY"
 os.environ['LANGCHAIN_PROJECT'] = 'local-rag'
 
 os.environ['GRADIO_OFFLINE_MODE'] = '1'
