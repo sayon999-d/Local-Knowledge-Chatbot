@@ -42,6 +42,7 @@ os.environ['LANGCHAIN_ENDPOINT'] = 'https://api.smith.langchain.com'
 # SECURITY FIX: Do not hardcode API Keys. 
 # os.environ['LANGCHAIN_API_KEY'] = "YOUR_LANGCHAIN_API_KEY" # Removed
 os.environ['LANGCHAIN_PROJECT'] = 'local-rag'
+os.environ['LANGCHAIN_PROJECT'] = 'local-rag'
 
 os.environ['GRADIO_OFFLINE_MODE'] = '1'
 os.environ['HF_HUB_OFFLINE'] = '1'
@@ -187,6 +188,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+<<<<<<< HEAD
 def clean_filename(filename):
     """Sanitize filename to prevent path traversal and ensure safety."""
     filename = os.path.basename(filename)
@@ -234,6 +236,18 @@ def save_text_to_file(source_name, content):
         return filename
     except Exception as ex:
         logger.error(f"Error saving file: {ex}")
+=======
+def save_text_to_file(source_name, content):
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        clean_name = source_name.split("//")[-1].replace("/", "_")[:30]
+        filename = f"{clean_name}_{timestamp}.txt"
+        filepath = os.path.join(SAVE_DIR, filename)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(f"Source: {source_name}\n\n{content}")
+        return filename
+    except:
+>>>>>>> a36c882316f80cd4568d84fbcfaab643136356d0
         return None
 
 class RAGSystem:
@@ -340,10 +354,13 @@ class RAGSystem:
             return False, str(e)
 
     def add_url(self, url):
+<<<<<<< HEAD
         is_valid, msg = validate_url(url)
         if not is_valid:
             return False, f"Security Warning: {msg}"
 
+=======
+>>>>>>> a36c882316f80cd4568d84fbcfaab643136356d0
         if not self.check_internet():
             return False, "Internet required for URLs."
         try:
@@ -396,12 +413,19 @@ with st.sidebar:
                         st.error(msg)
                     
     elif add_mode == "File Upload":
+<<<<<<< HEAD
         # 1GB Upload Limit Notice -> Changed to 10MB limit logic
         uploaded_file = st.file_uploader("Upload Text (Max 10MB)", type=['txt'], help="Supports text files")
         if uploaded_file and st.button("📂 Process File"):
             if uploaded_file.size > 10 * 1024 * 1024:
                 st.error("File input too large. Maximum 10MB.")
             elif engine:
+=======
+        # 1GB Upload Limit Notice
+        uploaded_file = st.file_uploader("Upload Text (Max 1GB)", type=['txt'], help="Supports large text files up to 1GB")
+        if uploaded_file and st.button("📂 Process File"):
+            if engine:
+>>>>>>> a36c882316f80cd4568d84fbcfaab643136356d0
                 with st.spinner("Reading File..."):
                     try:
                         content = uploaded_file.read().decode("utf-8")
@@ -474,4 +498,8 @@ if __name__ == "__main__":
         log_level="info",
         reload=False,
         workers=1
+<<<<<<< HEAD
     ) 
+=======
+    )
+>>>>>>> a36c882316f80cd4568d84fbcfaab643136356d0

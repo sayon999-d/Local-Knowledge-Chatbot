@@ -1,0 +1,7 @@
+chroma_db_data/
+local_embeddings/
+saved_articles/
+venv/
+__pycache__/
+.git
+.DS_Store
