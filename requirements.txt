@@ -1,0 +1,12 @@
+streamlit
+gradio
+langchain
+langchain-community
+langchain-chroma
+langchain-text-splitters
+sentence-transformers
+chromadb
+beautifulsoup4
+python-dotenv
+requests
+watchdog
