@@ -17,7 +17,6 @@ os.environ["USER_AGENT"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKi
 
 import requests
 import logging
-from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_groq import ChatGroq
@@ -25,6 +24,7 @@ from langchain.chains import RetrievalQA
 from langchain_community.document_loaders import WebBaseLoader
 from langchain.docstore.document import Document
 from dotenv import load_dotenv
+from hf_embeddings import HuggingFaceAPIEmbeddings
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -116,6 +116,80 @@ st.markdown("""
         border-radius: 10px;
         border: 1px solid #ced4da;
     }
+
+    /* 7. Chat Input - keep the message box visible */
+    [data-testid="stChatInputContainer"],
+    [data-testid="stChatInput"] {
+        background: rgba(244, 246, 249, 0.96);
+        border-top: 1px solid #d8dee6;
+        padding-top: 0.75rem;
+    }
+    [data-testid="stChatInput"] > div {
+        background-color: #ffffff !important;
+        border: 2px solid #b8c4d1 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08) !important;
+    }
+    [data-testid="stChatInputContainer"] *,
+    [data-testid="stChatInput"] * {
+        color: #1f2937 !important;
+    }
+    textarea[data-testid="stChatInputTextArea"],
+    [data-testid="stChatInput"] textarea {
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+        -webkit-text-fill-color: #1f2937 !important;
+        caret-color: #1f2937 !important;
+        opacity: 1 !important;
+        text-shadow: none !important;
+        filter: none !important;
+        mix-blend-mode: normal !important;
+        font-size: 1rem !important;
+        font-weight: 500;
+    }
+    textarea[data-testid="stChatInputTextArea"]::placeholder,
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: #64748b !important;
+        opacity: 1;
+    }
+    textarea[data-testid="stChatInputTextArea"]::-webkit-input-placeholder,
+    [data-testid="stChatInput"] textarea::-webkit-input-placeholder {
+        color: #64748b !important;
+    }
+    textarea[data-testid="stChatInputTextArea"]::-moz-placeholder,
+    [data-testid="stChatInput"] textarea::-moz-placeholder {
+        color: #64748b !important;
+        opacity: 1;
+    }
+    textarea[data-testid="stChatInputTextArea"]::selection,
+    [data-testid="stChatInput"] textarea::selection {
+        background: rgba(76, 175, 80, 0.25);
+        color: #111827 !important;
+    }
+    [data-testid="stChatInput"]:focus-within > div,
+    [data-testid="stChatInputContainer"] textarea:focus,
+    textarea[data-testid="stChatInputTextArea"]:focus,
+    [data-testid="stChatInput"] textarea:focus {
+        border-color: #4CAF50 !important;
+        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.18) !important;
+        outline: none !important;
+    }
+    [data-testid="stChatInputContainer"] button,
+    [data-testid="stChatInput"] button[data-testid="stChatInputSubmitButton"],
+    [data-testid="stChatInput"] button[data-testid="stChatInputMicButton"] {
+        background-color: #4CAF50 !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stChatInput"] button[data-testid="stChatInputSubmitButton"]:disabled,
+    [data-testid="stChatInput"] button[data-testid="stChatInputMicButton"]:disabled {
+        background-color: #94a3b8 !important;
+        color: #ffffff !important;
+    }
+    [data-testid="stChatInputContainer"] button svg,
+    [data-testid="stChatInput"] button svg {
+        fill: #ffffff !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -172,7 +246,7 @@ class RAGSystem:
         if not HUGGINGFACE_API_KEY:
             st.error("HUGGINGFACE_API_KEY environment variable is not set!")
             st.stop()
-        return HuggingFaceInferenceAPIEmbeddings(
+        return HuggingFaceAPIEmbeddings(
             api_key=HUGGINGFACE_API_KEY,
             model_name=EMBEDDING_MODEL
         )

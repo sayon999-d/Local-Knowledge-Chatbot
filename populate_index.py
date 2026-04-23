@@ -1,11 +1,12 @@
 import os
 import logging
+import time
 from dotenv import load_dotenv
-from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import WebBaseLoader
 from pinecone import Pinecone, ServerlessSpec
+from hf_embeddings import HuggingFaceAPIEmbeddings
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +18,9 @@ HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "rag-chatbot")
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+UPLOAD_BATCH_SIZE = int(os.getenv("UPLOAD_BATCH_SIZE", "40"))
+EMBEDDING_WORKERS = int(os.getenv("EMBEDDING_WORKERS", "4"))
+RETRY_DELAY_SECONDS = float(os.getenv("UPLOAD_RETRY_DELAY_SECONDS", "5"))
 
 URL_LIST = [
     # AMD Radeon (Official Product & Tech Pages)
@@ -84,9 +88,10 @@ def main():
         logger.info(f"Index '{PINECONE_INDEX_NAME}' already exists.")
 
     logger.info("Setting up embeddings...")
-    embeddings = HuggingFaceInferenceAPIEmbeddings(
+    embeddings = HuggingFaceAPIEmbeddings(
         api_key=HUGGINGFACE_API_KEY,
-        model_name=EMBEDDING_MODEL
+        model_name=EMBEDDING_MODEL,
+        max_workers=EMBEDDING_WORKERS,
     )
 
     logger.info(f"Scraping {len(URL_LIST)} URLs...")
@@ -101,15 +106,51 @@ def main():
     split_docs = text_splitter.split_documents(raw_docs)
     logger.info(f"Split into {len(split_docs)} chunks.")
 
-    logger.info("Uploading to Pinecone (this may take a few minutes)...")
+    logger.info("Uploading to Pinecone in batches...")
     os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
-    vectorstore = PineconeVectorStore.from_documents(
-        documents=split_docs,
-        embedding=embeddings,
-        index_name=PINECONE_INDEX_NAME
+
+    vectorstore = PineconeVectorStore(
+        index_name=PINECONE_INDEX_NAME,
+        embedding=embeddings
     )
 
-    logger.info(f"Done! {len(split_docs)} chunks uploaded to '{PINECONE_INDEX_NAME}'.")
+    total = len(split_docs)
+    uploaded = 0
+
+    logger.info(
+        "Using upload batch size %s with %s embedding workers.",
+        UPLOAD_BATCH_SIZE,
+        EMBEDDING_WORKERS,
+    )
+
+    for i in range(0, total, UPLOAD_BATCH_SIZE):
+        batch = split_docs[i:i + UPLOAD_BATCH_SIZE]
+        try:
+            vectorstore.add_documents(
+                batch,
+                batch_size=UPLOAD_BATCH_SIZE,
+                embedding_chunk_size=UPLOAD_BATCH_SIZE,
+                async_req=True,
+            )
+            uploaded += len(batch)
+            logger.info(f"  Uploaded {uploaded}/{total} chunks")
+        except Exception as e:
+            logger.error(f"  Error on batch {i}-{i+len(batch)}: {e}")
+            logger.info("  Retrying after %.1fs...", RETRY_DELAY_SECONDS)
+            time.sleep(RETRY_DELAY_SECONDS)
+            try:
+                vectorstore.add_documents(
+                    batch,
+                    batch_size=UPLOAD_BATCH_SIZE,
+                    embedding_chunk_size=UPLOAD_BATCH_SIZE,
+                    async_req=True,
+                )
+                uploaded += len(batch)
+                logger.info(f"  Retry success. {uploaded}/{total} chunks")
+            except Exception as e2:
+                logger.error(f"  Skipping batch: {e2}")
+
+    logger.info(f"Done! {uploaded}/{total} chunks uploaded to '{PINECONE_INDEX_NAME}'.")
     logger.info("Your Pinecone index is now populated. You can deploy the main app.")
 
 

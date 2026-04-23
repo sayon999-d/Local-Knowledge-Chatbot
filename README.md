@@ -1,6 +1,6 @@
 # RAG Knowledge Chatbot
 
-A cloud-deployable **RAG (Retrieval-Augmented Generation)** chatbot that builds a knowledge base from web URLs and documents, then answers questions using AI. Powered by **Groq** for fast LLM inference, **Pinecone** for persistent vector storage, and **HuggingFace** for embeddings.
+A cloud-deployable **RAG (Retrieval-Augmented Generation)** chatbot that builds a knowledge base from web URLs and documents, then answers questions using AI. Powered by **Groq** for fast LLM inference, **Pinecone** for persistent vector storage, and **Hugging Face** for embeddings.
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -12,6 +12,8 @@ A cloud-deployable **RAG (Retrieval-Augmented Generation)** chatbot that builds 
 - **Fast LLM via Groq** — Sub-second responses using `llama-3.1-8b-instant`
 - **Web Scraping** — Add knowledge from any public URL
 - **File Upload** — Upload `.txt` files to expand the knowledge base
+- **Reliable Hugging Face Embeddings** — Uses a custom wrapper around `InferenceClient.feature_extraction()`
+- **Faster Index Population** — Parallel embedding requests and larger Pinecone upload batches
 - **Response Caching** — Repeated questions served instantly (zero API cost)
 - **Rate Limiting** — Built-in session limits to control API token usage
 - **Token Tracking** — Live usage stats in the sidebar
@@ -27,7 +29,7 @@ graph TB
         A["populate_index.py"] -->|"Scrape 25+ URLs"| B["Web Sources"]
         B --> C["Text Chunking<br/>(1000 chars, 100 overlap)"]
         C -->|"HuggingFace API"| D["Generate Embeddings<br/>(384-dim vectors)"]
-        D -->|"Upload vectors"| E[("Pinecone Cloud<br/>Vector Database")]
+        D -->|"Parallel upload batches"| E[("Pinecone Cloud<br/>Vector Database")]
     end
 
     subgraph "Runtime (Streamlit App)"
@@ -110,7 +112,7 @@ graph LR
 | Component | Service | Free Tier |
 |-----------|---------|-----------|
 | **LLM** | [Groq](https://console.groq.com) | 14,400 requests/day |
-| **Embeddings** | [HuggingFace Inference API](https://huggingface.co/settings/tokens) | Rate-limited, free |
+| **Embeddings** | [Hugging Face Inference API](https://huggingface.co/settings/tokens) | Rate-limited, free |
 | **Vector DB** | [Pinecone](https://app.pinecone.io) | 100K vectors, 1 index |
 | **Hosting** | [Streamlit Cloud](https://share.streamlit.io) | Free for public repos |
 
@@ -120,6 +122,8 @@ graph LR
 Local-Knowledge-Chatbot/
 ├── main.py                          # Streamlit app (entry point)
 ├── populate_index.py                # One-time script to load data into Pinecone
+├── hf_embeddings.py                 # Reliable Hugging Face embeddings wrapper
+├── test_hf.py                       # Quick embedding connectivity test
 ├── requirements.txt                 # Python dependencies
 ├── .env.example                     # Environment variables template
 ├── .streamlit/
@@ -163,6 +167,14 @@ python populate_index.py
 ```
 
 This scrapes all URLs, embeds the content, and uploads to Pinecone. Run this **once** — data persists permanently.
+
+Optional indexing performance settings:
+
+```env
+UPLOAD_BATCH_SIZE=40
+EMBEDDING_WORKERS=4
+UPLOAD_RETRY_DELAY_SECONDS=5
+```
 
 ### 4. Run Locally
 
@@ -228,6 +240,18 @@ The sidebar shows:
 - Approximate token usage
 - Current model and token limits
 
+## Helper Scripts
+
+### Test Hugging Face Embeddings
+
+Use this if you want to confirm your Hugging Face key and embedding model are working:
+
+```bash
+python test_hf.py
+```
+
+Expected output includes a `Shape: (384,)` line and a preview of the first embedding values.
+
 ## Configuration
 
 All limits are configurable at the top of `main.py`:
@@ -248,15 +272,26 @@ GROQ_MODEL=llama-3.1-8b-instant       # Faster, default
 GROQ_MODEL=mixtral-8x7b-32768         # Good balance
 ```
 
+Index population can also be tuned with environment variables used by `populate_index.py`:
+
+```env
+UPLOAD_BATCH_SIZE=40
+EMBEDDING_WORKERS=4
+UPLOAD_RETRY_DELAY_SECONDS=5
+```
+
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
 | `GROQ_API_KEY not set` | Add it to `.env` (local) or Streamlit Secrets (cloud) |
 | `PINECONE_API_KEY not set` | Get a free key at [app.pinecone.io](https://app.pinecone.io) |
+| `ModuleNotFoundError: No module named 'langchain_community'` | Run `pip install -r requirements.txt` in the same Python environment you use to run the scripts |
+| `Expecting value: line 1 column 1 (char 0)` during indexing | Use the current `hf_embeddings.py` wrapper and rerun `populate_index.py` |
 | `Rate limit reached` | Refresh the page to reset the session counter |
 | `Initialization error` | Check that `populate_index.py` was run and the Pinecone index exists |
 | Slow responses | Switch to `llama-3.1-8b-instant` model (default) |
+| Slow indexing uploads | Increase `UPLOAD_BATCH_SIZE` or `EMBEDDING_WORKERS` gradually |
 | Empty answers | Run `populate_index.py` to populate the knowledge base |
 
 ## License
