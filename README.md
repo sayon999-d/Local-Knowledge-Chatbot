@@ -1,243 +1,272 @@
-# Local Knowledge Chatbot
+# RAG Knowledge Chatbot
 
-A powerful, locally-running RAG (Retrieval-Augmented Generation) chatbot system that allows you to build a knowledge base from web URLs and documents, then query it using local LLMs via Ollama.
+A cloud-deployable **RAG (Retrieval-Augmented Generation)** chatbot that builds a knowledge base from web URLs and documents, then answers questions using AI. Powered by **Groq** for fast LLM inference, **Pinecone** for persistent vector storage, and **HuggingFace** for embeddings.
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Features
 
-- **Local-First Architecture**: Runs entirely on your machine with no external API dependencies
-- **Web Scraping**: Automatically scrapes and indexes content from web URLs
-- **File Upload**: Add knowledge by uploading text files
-- **Vector Database**: Uses ChromaDB for efficient semantic search
-- **Ollama Integration**: Leverages local LLMs (Mistral, Llama, etc.) via Ollama
-- **Streamlit UI**: Beautiful, interactive web interface
-- **Docker Support**: Easy deployment with Docker and Docker Compose
-- **Offline Capable**: Works without internet connection once models are downloaded
-
-## Prerequisites
-
-- Python 3.9 or higher
-- [Ollama](https://ollama.ai/) installed and running
-- Docker and Docker Compose (optional, for containerized deployment)
-
-## Installation
-
-### Option 1: Local Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/sayon999-d/Local-Knowledge-Chatbot.git
-   cd Local-Knowledge-Chatbot
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set up Ollama:**
-   ```bash
-   # Install Ollama from https://ollama.ai/
-   # Pull the required model
-   ollama pull mistral:instruct
-   ```
-
-4. **Run the application:**
-   ```bash
-   streamlit run main.py
-   ```
-
-### Option 2: Docker Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/sayon999-d/Local-Knowledge-Chatbot.git
-   cd Local-Knowledge-Chatbot
-   ```
-
-2. **Start with Docker Compose:**
-   ```bash
-   docker-compose up --build
-   ```
-
-3. **Access the application:**
-   - Open your browser and navigate to `http://localhost:8080`
-
-## Configuration
-
-### Environment Variables
-
-Create a `.env` file in the project root (optional):
-
-```env
-OLLAMA_BASE_URL=http://localhost:11434
-```
-
-For Docker, the default is `http://host.docker.internal:11434` to connect to Ollama running on the host machine.
-
-### Model Configuration
-
-The default configuration uses:
-- **LLM Model**: `mistral:instruct` (via Ollama)
-- **Embedding Model**: `all-MiniLM-L6-v2` (via Ollama)
-
-You can modify these in `main.py`:
-```python
-OLLAMA_MODEL = "mistral:instruct"
-EMBEDDING_MODEL = "mxbai-embed-large"
-```
-
-## Usage
-
-### Adding Knowledge
-
-1. **Via Web URL:**
-   - Click on "Add Knowledge" in the sidebar
-   - Select "Web URL"
-   - Enter a URL and click "Scrape and Learn"
-
-2. **Via File Upload:**
-   - Click on "Add Knowledge" in the sidebar
-   - Select "File Upload"
-   - Upload a `.txt` file and click "Read and Learn"
-
-### Querying the Knowledge Base
-
-1. Type your question in the chat input at the bottom
-2. The system will:
-   - Search the vector database for relevant context
-   - Generate an answer using the local LLM
-   - Display sources used for the answer
+- **Cloud-Native Architecture** — No local servers, models, or GPUs required
+- **Persistent Vector Store** — Pinecone stores embeddings permanently (survives restarts)
+- **Fast LLM via Groq** — Sub-second responses using `llama-3.1-8b-instant`
+- **Web Scraping** — Add knowledge from any public URL
+- **File Upload** — Upload `.txt` files to expand the knowledge base
+- **Response Caching** — Repeated questions served instantly (zero API cost)
+- **Rate Limiting** — Built-in session limits to control API token usage
+- **Token Tracking** — Live usage stats in the sidebar
+- **Streamlit Cloud Ready** — One-click deploy with zero infrastructure
 
 ## Architecture
 
+### High-Level System Flow
+
+```mermaid
+graph TB
+    subgraph "One-Time Setup"
+        A["populate_index.py"] -->|"Scrape 25+ URLs"| B["Web Sources"]
+        B --> C["Text Chunking<br/>(1000 chars, 100 overlap)"]
+        C -->|"HuggingFace API"| D["Generate Embeddings<br/>(384-dim vectors)"]
+        D -->|"Upload vectors"| E[("Pinecone Cloud<br/>Vector Database")]
+    end
+
+    subgraph "Runtime (Streamlit App)"
+        F["User asks question"] --> G["Input Validation<br/>(1000 char limit)"]
+        G --> H{"Cache<br/>Hit?"}
+        H -->|"Yes"| I["Return cached answer<br/>(0 API tokens)"]
+        H -->|"No"| J["Embed question<br/>(HuggingFace API)"]
+        J --> K["Similarity Search<br/>(Pinecone, k=2)"]
+        K --> L["2 most relevant chunks"]
+        L --> M["Groq LLM<br/>(llama-3.1-8b-instant)"]
+        M --> N["Generated Answer"]
+        N --> O["Cache response"]
+        O --> P["Display in Streamlit"]
+    end
+
+    E -.->|"Connected at startup"| K
+
+    style E fill:#1a7a4c,stroke:#fff,color:#fff
+    style M fill:#f97316,stroke:#fff,color:#fff
+    style J fill:#6366f1,stroke:#fff,color:#fff
+    style H fill:#eab308,stroke:#000
 ```
-┌─────────────────┐
-│  Streamlit UI   │
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│   RAG System    │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼───┐ ┌──▼──────┐
-│ChromaDB│ │ Ollama  │
-│Vector  │ │  LLM    │
-│Store   │ │         │
-└────────┘ └─────────┘
+
+### RAG Pipeline Detail
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant S as Streamlit App
+    participant HF as HuggingFace API
+    participant PC as Pinecone
+    participant GQ as Groq API
+
+    U->>S: "What GPU is best for AI?"
+
+    Note over S: Rate limit check (30/session)
+    Note over S: Input truncation (1000 chars)
+    Note over S: Cache lookup (MD5 hash)
+
+    S->>HF: Embed question → 384-dim vector
+    HF-->>S: [0.12, -0.34, 0.56, ...]
+
+    S->>PC: Cosine similarity search (k=2)
+    PC-->>S: 2 closest text chunks + metadata
+
+    S->>GQ: Question + 2 chunks → LLM prompt
+    Note over GQ: max_tokens=512, temp=0.1
+    GQ-->>S: "The RX 7900 XTX is excellent for AI..."
+
+    S->>S: Cache response (MD5 key)
+    S->>U: Display answer + source links
 ```
+
+### API Token Flow & Limits
+
+```mermaid
+graph LR
+    subgraph "Per Request Limits"
+        A["User Input"] -->|"Max 1000 chars"| B["Groq LLM"]
+        B -->|"Max 512 output tokens"| C["Response"]
+    end
+
+    subgraph "Per Session Limits"
+        D["Session Start"] --> E["30 questions max"]
+        E --> F["Token counter in sidebar"]
+    end
+
+    subgraph "Data Limits"
+        G["File Upload"] -->|"Max 10 MB"| H["Truncate to 50K chars"]
+        H --> I["Embed & Store"]
+    end
+
+    style B fill:#f97316,stroke:#fff,color:#fff
+    style E fill:#eab308,stroke:#000
+    style H fill:#6366f1,stroke:#fff,color:#fff
+```
+
+## Tech Stack
+
+| Component | Service | Free Tier |
+|-----------|---------|-----------|
+| **LLM** | [Groq](https://console.groq.com) | 14,400 requests/day |
+| **Embeddings** | [HuggingFace Inference API](https://huggingface.co/settings/tokens) | Rate-limited, free |
+| **Vector DB** | [Pinecone](https://app.pinecone.io) | 100K vectors, 1 index |
+| **Hosting** | [Streamlit Cloud](https://share.streamlit.io) | Free for public repos |
 
 ## Project Structure
 
 ```
 Local-Knowledge-Chatbot/
-├── main.py                 # Main application file
-├── requirements.txt        # Python dependencies
-├── Dockerfile             # Docker configuration
-├── docker-compose.yml     # Docker Compose configuration
-├── README.md             # This file
-├── LICENSE               # MIT License
-├── chroma_db_data/       # Vector database (created automatically)
-├── local_embeddings/     # Local embedding models (optional)
-└── saved_articles/       # Saved scraped content (created automatically)
+├── main.py                          # Streamlit app (entry point)
+├── populate_index.py                # One-time script to load data into Pinecone
+├── requirements.txt                 # Python dependencies
+├── .env.example                     # Environment variables template
+├── .streamlit/
+│   ├── config.toml                  # Streamlit server & theme config
+│   └── secrets.toml.example         # Secrets template for Streamlit Cloud
+├── LICENSE                          # MIT License
+└── README.md                        # This file
 ```
 
-## Customization
+## Quick Start
 
-### Adding Default URLs
+### 1. Get API Keys (Free)
 
-Edit the `URL_LIST` in `main.py` to include URLs that will be indexed on first run:
+| Service | Link | Key Name |
+|---------|------|----------|
+| Groq | [console.groq.com/keys](https://console.groq.com/keys) | `GROQ_API_KEY` |
+| HuggingFace | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) | `HUGGINGFACE_API_KEY` |
+| Pinecone | [app.pinecone.io](https://app.pinecone.io) | `PINECONE_API_KEY` |
+
+### 2. Clone & Configure
+
+```bash
+git clone https://github.com/sayon999-d/Local-Knowledge-Chatbot.git
+cd Local-Knowledge-Chatbot
+pip install -r requirements.txt
+```
+
+Create a `.env` file:
+
+```env
+GROQ_API_KEY=gsk_your_key_here
+HUGGINGFACE_API_KEY=hf_your_key_here
+PINECONE_API_KEY=pcsk_your_key_here
+PINECONE_INDEX_NAME=rag-chatbot
+```
+
+### 3. Populate the Vector Store (One-Time)
+
+```bash
+python populate_index.py
+```
+
+This scrapes all URLs, embeds the content, and uploads to Pinecone. Run this **once** — data persists permanently.
+
+### 4. Run Locally
+
+```bash
+streamlit run main.py
+```
+
+Open [http://localhost:8501](http://localhost:8501) in your browser.
+
+## Deploy to Streamlit Cloud
+
+### Step 1: Push to GitHub
+
+```bash
+git add -A
+git commit -m "cloud deployment ready"
+git push origin cloud-deploy
+```
+
+### Step 2: Connect to Streamlit Cloud
+
+1. Go to [share.streamlit.io](https://share.streamlit.io)
+2. Click **"New app"**
+3. Select your repo: `sayon999-d/Local-Knowledge-Chatbot`
+4. Branch: `cloud-deploy`
+5. Main file: `main.py`
+
+### Step 3: Add Secrets
+
+In the Streamlit Cloud dashboard → **Settings** → **Secrets**, paste:
+
+```toml
+GROQ_API_KEY = "gsk_your_actual_key"
+HUGGINGFACE_API_KEY = "hf_your_actual_key"
+PINECONE_API_KEY = "pcsk_your_actual_key"
+PINECONE_INDEX_NAME = "rag-chatbot"
+```
+
+### Step 4: Deploy
+
+Click **"Deploy"** — your app will be live at `https://your-app.streamlit.app` 🚀
+
+## Usage
+
+### Asking Questions
+
+Type any question in the chat input. The AI will:
+1. Search Pinecone for the 2 most relevant knowledge chunks
+2. Send the question + context to Groq's LLM
+3. Display the answer with clickable source links
+
+### Adding New Knowledge
+
+Use the sidebar to add knowledge at any time:
+
+- **Web URL** — Paste a link, click "Scrape URL". Content is scraped, embedded, and stored in Pinecone permanently.
+- **File Upload** — Upload a `.txt` file (max 10 MB). Content is chunked and stored in Pinecone.
+
+### Monitoring Usage
+
+The sidebar shows:
+- A progress bar for session question count (max 30)
+- Approximate token usage
+- Current model and token limits
+
+## Configuration
+
+All limits are configurable at the top of `main.py`:
 
 ```python
-URL_LIST = [
-    "https://example.com/page1",
-    "https://example.com/page2",
-    # Add your URLs here
-]
+MAX_QUESTION_LENGTH = 1000       # Max characters per question
+MAX_GROQ_TOKENS = 512            # Max output tokens per LLM response
+MAX_QUESTIONS_PER_SESSION = 30   # Rate limit per session
+MAX_FILE_UPLOAD_MB = 10          # Max upload file size
+MAX_FILE_CONTENT_CHARS = 50000   # Truncate file content to save tokens
 ```
 
-### Changing Port
+To use a different LLM model, set the `GROQ_MODEL` environment variable:
 
-For local installation:
-```bash
-streamlit run main.py --server.port 8501
-```
-
-For Docker, edit `docker-compose.yml`:
-```yaml
-ports:
-  - "8501:8501"  # Change 8080 to your desired port
+```env
+GROQ_MODEL=llama-3.3-70b-versatile    # More capable, slower
+GROQ_MODEL=llama-3.1-8b-instant       # Faster, default
+GROQ_MODEL=mixtral-8x7b-32768         # Good balance
 ```
 
 ## Troubleshooting
 
-### Ollama Connection Issues
-
-- Ensure Ollama is running: `ollama serve`
-- Check the `OLLAMA_BASE_URL` in your configuration
-- For Docker, ensure `host.docker.internal` resolves correctly
-
-### Model Not Found
-
-- Pull the required model: `ollama pull mistral:instruct`
-- Verify the model name matches in `main.py`
-
-### Port Already in Use
-
-- Change the port in `docker-compose.yml` or use a different port for Streamlit
-- Check what's using the port: `lsof -i :8501`
-
-## Docker Commands
-
-- Push (Upload to Docker Hub)
-
- 1. **Log in to Docker Hub:**
-```bash
-docker login
-```
-
- 2. **Tag your image (Replace 'v1' with a version number):**
-```bash
-docker tag local-rag-app manttex999/rag-chatbot:v1
-```
-
- 3. **Upload it:**
-  ```bash
-docker push manttex999/rag-chatbot:v1
-```
-
- 4. **Pull (Download):**
-  ```bash
- docker pull manttex999/rag-chatbot:v1
- ```
-
-  5. **Run (Start the App):**
-- Since this app needs to talk to Ollama on your host machine, you must use this specific command to bridge the network.
-Prerequisite: Ensure ollama serve is running on the host computer first.
-
-```bash
-  docker run -p 8501:8501 \
-  --add-host host.docker.internal:host-gateway \
-  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
-  manttex999/rag-chatbot:latest
-```
+| Issue | Solution |
+|-------|----------|
+| `GROQ_API_KEY not set` | Add it to `.env` (local) or Streamlit Secrets (cloud) |
+| `PINECONE_API_KEY not set` | Get a free key at [app.pinecone.io](https://app.pinecone.io) |
+| `Rate limit reached` | Refresh the page to reset the session counter |
+| `Initialization error` | Check that `populate_index.py` was run and the Pinecone index exists |
+| Slow responses | Switch to `llama-3.1-8b-instant` model (default) |
+| Empty answers | Run `populate_index.py` to populate the knowledge base |
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Contact
-
-For questions or issues, please open an issue on GitHub.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- [LangChain](https://www.langchain.com/) for the RAG framework
-- [ChromaDB](https://www.trychroma.com/) for vector storage
-- [Ollama](https://ollama.ai/) for local LLM inference
-- [Streamlit](https://streamlit.io/) for the UI framework
+- [LangChain](https://www.langchain.com/) — RAG framework
+- [Groq](https://groq.com/) — Ultra-fast LLM inference
+- [Pinecone](https://www.pinecone.io/) — Serverless vector database
+- [HuggingFace](https://huggingface.co/) — Embedding models
+- [Streamlit](https://streamlit.io/) — App framework and cloud hosting

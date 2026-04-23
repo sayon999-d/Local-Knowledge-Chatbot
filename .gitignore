@@ -25,6 +25,7 @@ ENV/
 *.swp
 *.swo
 .env
+.streamlit/secrets.toml
 chroma_db_data/
 local_embeddings/
 saved_articles/
