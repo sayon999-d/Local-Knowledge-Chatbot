@@ -5,6 +5,10 @@ A cloud-deployable **RAG (Retrieval-Augmented Generation)** chatbot that builds 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+## Live Demo
+
+- Streamlit App: https://local-knowledge-chatbot.streamlit.app/
+
 ## Features
 
 - **Cloud-Native Architecture** — No local servers, models, or GPUs required
